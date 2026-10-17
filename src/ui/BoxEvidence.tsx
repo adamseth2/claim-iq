@@ -70,6 +70,13 @@ export function SourceInspector({ evidence }: { evidence: EvidenceRef }) {
         <dt style={dt}>Document type</dt>
         <dd style={dd}>{asset.metadata.documentType}</dd>
       </dl>
+      {review === 'Candidate' && (
+        <p style={{ fontSize: 12, color: 'var(--amber)', marginTop: 8 }}>
+          <span aria-hidden="true">▲ </span>
+          Extracted value is a candidate. It must be reviewer-confirmed before it can support the
+          recovery total.
+        </p>
+      )}
       <div style={{ marginTop: 12 }}>
         <a
           href={openInBoxUrl(asset.fileId)}

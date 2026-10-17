@@ -45,3 +45,26 @@ a { color: var(--cobalt); }
   padding: 4px 16px;
   text-align: center;
 }
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--cobalt);
+  color: #fff;
+  padding: 8px 14px;
+  z-index: 100;
+  border-radius: 0 0 4px 0;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* Prevent unintended horizontal overflow at target desktop widths. */
+html, body { max-width: 100%; overflow-x: hidden; }
+table { max-width: 100%; }
+
+/* At 1280px the two-column investigation/dashboard grids stay readable. */
+@media (max-width: 1320px) {
+  main { padding: 16px !important; }
+}
