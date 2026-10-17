@@ -15,7 +15,9 @@
     "box:verify": "node --env-file=.env server/box-verify.mjs",
     "box:seed": "node --env-file=.env server/box-seed.mjs",
     "seed:docs": "node server/seed/generate.mjs",
-    "box:assets": "node server/box-assets-gen.mjs"
+    "box:assets": "node server/box-assets-gen.mjs",
+    "seed:docs:reportlab": "node server/seed/generate.mjs --renderer reportlab",
+    "test:seed": "node --test server/seed/tests/generate.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

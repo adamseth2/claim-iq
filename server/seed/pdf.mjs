@@ -2,7 +2,9 @@
 // Produces valid PDF 1.4 with Helvetica. Enough for synthetic demo documents.
 
 function esc(s) {
-  return String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  return String(s).replace(/[\u2010-\u2015]/g, '-').replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"').replace(/\u00b7/g, '-').replace(/[^\x20-\x7e]/g, '?')
+    .replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
 
 /**
@@ -17,8 +19,18 @@ export function buildPdf(pages) {
   const fontObj = 3;
   let next = 4;
 
-  const contentStreams = [];
+  // Keep every line, including long schedules and final synthetic disclaimers.
+  // The old writer discarded overflow below the first page's bottom margin.
+  const physicalPages = [];
   for (const page of pages) {
+    const allLines = page.lines.flatMap((line) => wrap(String(line), 95));
+    const capacity = page.title ? 46 : 48;
+    for (let offset = 0; offset < Math.max(allLines.length, 1); offset += capacity) {
+      physicalPages.push({ title: page.title, lines: allLines.slice(offset, offset + capacity) });
+    }
+  }
+  const contentStreams = [];
+  for (const page of physicalPages) {
     const lines = [];
     let y = 760;
     if (page.title) {
@@ -34,6 +46,7 @@ export function buildPdf(pages) {
         y -= 14;
       }
     }
+    lines.push(`BT /F1 8 Tf 54 30 Td (SYNTHETIC DEMONSTRATION DOCUMENT - FICTIONAL - Page ${pageObjNums.length + 1}) Tj ET`);
     const stream = lines.join('\n');
     const contentNum = next++;
     const pageNum = next++;
