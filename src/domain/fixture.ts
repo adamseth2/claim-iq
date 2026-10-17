@@ -79,7 +79,11 @@ export function buildInvestigationPopulation(): Claim[] {
     const failure = FAILURE_NO_POWER;
     let lot: string;
     let evidenceState: string;
-    const cost = VERIFIED_PART_COST;
+    // Supported claims carry the verified part cost (620). Non-supported claims
+    // get varied, realistic costs — some above the 650 cap — so the cap is
+    // visibly meaningful and the population does not look uniform. Only
+    // supported claims enter the recovery total, so this does not affect $14,880.
+    let cost = VERIFIED_PART_COST;
 
     if (classification === 'supported') {
       lot = COVERED_LOTS[i % COVERED_LOTS.length];
@@ -87,15 +91,18 @@ export function buildInvestigationPopulation(): Claim[] {
     } else if (classification === 'missing') {
       lot = '(none)';
       evidenceState = 'Missing supplier-lot';
+      cost = [590, 640, 705, 620, 680][i % 5];
     } else if (classification === 'engineering') {
       lot = COVERED_LOTS[i % COVERED_LOTS.length];
       evidenceState = 'Engineering review';
+      cost = [720, 610, 650][i % 3];
     } else {
       lot = COVERED_LOTS[i % COVERED_LOTS.length];
       // Excluded for a documented non-supplier cause (e.g. customer-induced
       // damage). Still a no-power PSU replacement, so it remains in the
       // no-power lineage of the funnel; exclusion is a review decision.
       evidenceState = 'Excluded (documented non-supplier cause)';
+      cost = [480, 760, 620][i % 3];
     }
 
     const repairDate = g < IN_WINDOW ? currentWindowDate(g) : earlierScopeDate(g);

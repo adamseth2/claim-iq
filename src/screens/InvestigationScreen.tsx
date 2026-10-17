@@ -255,10 +255,13 @@ function ClaimDetail({ claim }: { claim: Claim }) {
         ))}
       </ul>
       <p style={{ fontSize: 13, marginTop: 10 }}>
-        Cost calculation:{' '}
+        Recoverable amount:{' '}
         <span className="mono">
-          min({usd(claim.cost)}, {usd(PER_UNIT_CAP)}) = {usd(Math.min(claim.cost, PER_UNIT_CAP))}
+          min(cost {usd(claim.cost)}, cap {usd(PER_UNIT_CAP)}) = {usd(Math.min(claim.cost, PER_UNIT_CAP))}
         </span>
+        {claim.cost > PER_UNIT_CAP && (
+          <span style={{ color: 'var(--amber)' }}> — capped at {usd(PER_UNIT_CAP)}</span>
+        )}
       </p>
     </Panel>
   );
