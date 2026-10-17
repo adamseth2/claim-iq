@@ -7,7 +7,7 @@
 //  run with --env-file yourself. The dev script runs both app + proxy.)
 import express from 'express';
 import { authorizeUrl, exchangeCode, loadTokens, boxApi } from './box-client.mjs';
-import { generateAndWriteDraft } from './box-draft.mjs';
+import { generateAndWriteDraft, buildDraftPdf } from './box-draft.mjs';
 
 const app = express();
 app.use(express.json());
@@ -52,6 +52,18 @@ app.post('/box-proxy/oauth/token', async (req, res) => {
   try {
     const tok = await exchangeCode(code);
     res.json({ ok: true, expiresAt: tok.expires_at });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e.message ?? e) });
+  }
+});
+
+// Returns the draft PDF for in-browser preview. Does NOT write to Box.
+app.get('/box-proxy/draft/preview', (_req, res) => {
+  try {
+    const pdf = buildDraftPdf();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="SI-2026-014_Supplier_Recovery_Claim_DRAFT.pdf"');
+    res.send(pdf);
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e.message ?? e) });
   }

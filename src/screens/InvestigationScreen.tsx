@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { openInBoxUrl } from '../data/boxAssets';
 import {
   computePopulation,
   classifyPopulation,
@@ -35,15 +36,17 @@ const LANES: { key: Classification; label: string; tone: 'teal' | 'amber' | 'red
 const EVIDENCE: EvidenceRef[] = [
   {
     fileName: `Atlas_PSU_Supply_Agreement_${CONTRACT.agreementId}.pdf`,
-    finding: `Covered ${OEM_PART}/${SUPPLIER_PART}, 24-month term, ${usd(PER_UNIT_CAP)} cap, labor/shipping excluded.`,
-    pageRef: 'Sections 1–5',
-    excerpt: `Per-unit cap: ${usd(PER_UNIT_CAP)}. Recoverable cost: verified replacement-part cost.`,
+    finding: `24-month warranty (§5.1), FFR population causation (§7.4), part cost up to ${usd(PER_UNIT_CAP)}/unit (§8.1), labor/shipping excluded (§8.2), 90-day filing (§9.1).`,
+    pageRef: '§5.1, §7.4, §8.1–8.3, §9.1 · pp. 2–3',
+    excerpt: `Supplier shall reimburse the verified replacement-part cost paid by Buyer, up to a maximum of ${usd(PER_UNIT_CAP)} per unit.`,
     confidence: 0.98,
   },
   {
     fileName: `Atlas_PSU_Amendment_01_${CONTRACT.agreementId}.pdf`,
-    finding: `Adds supplier part ${SUPPLIER_PART} to the covered ${OEM_PART} mapping.`,
-    pageRef: 'Amendment 01',
+    finding: `Adds ${SUPPLIER_PART} to Schedule A for Deliveries on or after 2025-06-01 (PCN-ATL-2025-014).`,
+    pageRef: 'Amendment No. 1 §1 (Schedule A)',
+    excerpt: `${OEM_PART} / ${SUPPLIER_PART}: Covered for all Deliveries on or after 2025-06-01.`,
+    confidence: 0.97,
   },
   {
     fileName: `${SIGNAL.id}_R500_PSU_Engineering_Report.pdf`,
@@ -226,14 +229,15 @@ export function InvestigationScreen() {
 function ClaimDetail({ claim }: { claim: Claim }) {
   const supported = claim.classification === 'supported';
   const checklist = [
-    ['Completed warranty repair', true],
-    ['Exact component + supplier traceability', claim.supplierLot !== '(none)'],
-    ['Agreement covers component', true],
-    ['Within 24-month supplier warranty', true],
-    ['Matches engineering report criteria', supported || claim.classification === 'engineering'],
-    ['Verified replacement-part cost', true],
-    ['Filing window open', true],
-    ['No previous recovery', true],
+    ['Completed warranty repair (§7.1a)', true],
+    ['Exact component + supplier traceability (§4.3)', claim.supplierLot !== '(none)'],
+    ['Agreement covers component (Amend. 1, Sched. A)', true],
+    ['Within 24-month supplier warranty (§5.1)', true],
+    ['No warranty exclusion, e.g. customer damage (§5.2)', claim.classification !== 'excluded'],
+    ['Matches approved FFR frozen criteria (§7.4)', supported],
+    ['Verified replacement-part cost (§7.1d)', true],
+    ['Filing window open, 90 days (§9.1)', true],
+    ['No previous recovery (§8.3)', true],
   ] as const;
 
   return (
@@ -294,22 +298,45 @@ function InvestigationActions({
     setMsg(`Investigation ${INVESTIGATION_ID} opened.`);
   };
 
+  const [preview, setPreview] = useState<{ url: string; blob: Blob } | null>(null);
+
   const prepareDraft = async () => {
-    if (!window.confirm(`Prepare draft supplier recovery claim for ${SUPPORTED_CLAIMS} claims totaling ${usd(SUPPORTED_TOTAL)}? This writes a draft to Box labeled "Draft - not submitted". It does not submit or contact the supplier.`)) {
+    setBusy(true);
+    setMsg('Generating draft preview…');
+    try {
+      const res = await fetch('/box-proxy/draft/preview');
+      if (!res.ok) throw new Error(`preview failed (${res.status})`);
+      const blob = await res.blob();
+      setPreview({ url: URL.createObjectURL(blob), blob });
+      setMsg(null);
+    } catch (e) {
+      setMsg(`Draft preview error: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const closePreview = () => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  };
+
+  const downloadDraft = () => {
+    if (!preview) return;
+    const a = document.createElement('a');
+    a.href = preview.url;
+    a.download = DRAFT_FILE_NAME;
+    a.click();
+  };
+
+  const saveToBox = async () => {
+    if (!window.confirm(`Save this draft to Box (04 Draft Supplier Recovery Claims) labeled "Draft - not submitted"? It does not submit the claim or contact the supplier.`)) {
       return;
     }
     setBusy(true);
-    setMsg('Generating draft and writing to Box…');
+    setMsg('Writing draft to Box…');
     try {
-      const res = await fetch('/box-proxy/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          investigationId: INVESTIGATION_ID,
-          supportedCount: SUPPORTED_CLAIMS,
-          total: SUPPORTED_TOTAL,
-        }),
-      });
+      const res = await fetch('/box-proxy/draft', { method: 'POST' });
       const data = await res.json();
       if (data.ok) {
         update({
@@ -318,12 +345,12 @@ function InvestigationActions({
           draftFileId: data.fileId ?? null,
           draftFileName: data.fileName ?? null,
         });
-        setMsg(`Draft written to Box: ${data.fileName} (file ${data.fileId}). Labeled "Draft - not submitted".`);
+        setMsg(`Draft saved to Box: ${data.fileName} (file ${data.fileId}). Labeled "Draft - not submitted".`);
       } else {
-        setMsg(`Draft failed: ${data.error ?? 'unknown error'}`);
+        setMsg(`Box write failed: ${data.error ?? 'unknown error'}`);
       }
     } catch (e) {
-      setMsg(`Draft error: ${String(e)}`);
+      setMsg(`Box write error: ${String(e)}`);
     } finally {
       setBusy(false);
     }
@@ -337,11 +364,16 @@ function InvestigationActions({
         </button>
         <button
           onClick={prepareDraft}
-          disabled={!state.opened || busy || state.draftPrepared}
-          style={actionBtn(!state.opened || busy || state.draftPrepared)}
+          disabled={!state.opened || busy}
+          style={actionBtn(!state.opened || busy)}
         >
-          {state.draftPrepared ? 'Draft prepared ✓' : busy ? 'Working…' : 'Prepare draft supplier recovery claim'}
+          {busy && !preview ? 'Working…' : 'Prepare draft supplier recovery claim'}
         </button>
+        {state.draftPrepared && state.draftFileId && (
+          <a href={openInBoxUrl(state.draftFileId)} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>
+            Saved draft in Box ↗
+          </a>
+        )}
       </div>
       {msg && (
         <p role="status" style={{ fontSize: 13, marginTop: 10 }}>
@@ -349,11 +381,116 @@ function InvestigationActions({
         </p>
       )}
       <p style={{ color: 'var(--ink-soft)', fontSize: 12, marginTop: 8 }}>
-        State persists across browser refresh. The draft is an unsubmitted document written to the
-        controlled Box output folder; no supplier is contacted.
+        State persists across browser refresh. Preview the draft first; nothing is saved until you
+        download it or save it to Box. No supplier is contacted.
       </p>
+      {preview && (
+        <DraftPreviewModal
+          url={preview.url}
+          busy={busy}
+          savedToBox={state.draftPrepared}
+          onDownload={downloadDraft}
+          onSaveToBox={saveToBox}
+          onClose={closePreview}
+        />
+      )}
     </Panel>
   );
+}
+
+const DRAFT_FILE_NAME = `${INVESTIGATION_ID}_Supplier_Recovery_Claim_DRAFT.pdf`;
+
+function DraftPreviewModal({
+  url,
+  busy,
+  savedToBox,
+  onDownload,
+  onSaveToBox,
+  onClose,
+}: {
+  url: string;
+  busy: boolean;
+  savedToBox: boolean;
+  onDownload: () => void;
+  onSaveToBox: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="draft-preview-title"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(13,27,42,0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--surface-2)',
+          width: 'min(960px, 92vw)',
+          height: '88vh',
+          borderRadius: 6,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <header
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--line)',
+          }}
+        >
+          <div>
+            <h2 id="draft-preview-title" style={{ fontSize: 15, margin: 0 }}>
+              {DRAFT_FILE_NAME}
+            </h2>
+            <StatusBadge tone="amber">Draft - not submitted</StatusBadge>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onDownload} style={actionBtn(false)} autoFocus>
+              Download PDF
+            </button>
+            <button onClick={onSaveToBox} disabled={busy || savedToBox} style={secondaryBtn(busy || savedToBox)}>
+              {savedToBox ? 'Saved to Box ✓' : busy ? 'Saving…' : 'Save to Box'}
+            </button>
+            <button onClick={onClose} style={secondaryBtn(false)} aria-label="Close preview">
+              Close
+            </button>
+          </div>
+        </header>
+        <iframe title="Draft supplier recovery claim preview" src={url} style={{ flex: 1, border: 'none' }} />
+      </div>
+    </div>
+  );
+}
+
+function secondaryBtn(disabled: boolean): React.CSSProperties {
+  return {
+    background: 'transparent',
+    color: disabled ? '#9aa4ae' : 'var(--cobalt)',
+    border: `1px solid ${disabled ? '#c9cfd6' : 'var(--cobalt)'}`,
+    borderRadius: 4,
+    padding: '9px 14px',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: disabled ? 'default' : 'pointer',
+  };
 }
 
 function laneColor(tone: 'teal' | 'amber' | 'red') {

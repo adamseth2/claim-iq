@@ -39,7 +39,7 @@ async function findChild(parentId, name) {
   return f ? f.id : null;
 }
 
-function buildDraftPdf() {
+export function buildDraftPdf() {
   const pop = buildPopulation().filter((r) => r.classification === 'supported');
   const schedule = pop.map(
     (r, i) =>

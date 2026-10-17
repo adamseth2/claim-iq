@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { buildPdf } from './pdf.mjs';
 import { buildXlsx } from './xlsx.mjs';
 import { buildPopulation } from './population.mjs';
+import { agreementPages, amendmentPages } from './contracts.mjs';
 import {
   COMPANY,
   SUPPLIER,
@@ -25,62 +26,11 @@ mkdirSync(OUT, { recursive: true });
 
 const FOOTER = 'SYNTHETIC DEMONSTRATION DOCUMENT — fictional. Not a real agreement or legal instrument.';
 
-// 1. Supply Agreement
-const agreement = buildPdf([
-  {
-    title: `PSU Supply Agreement ${CONTRACT_ID}`,
-    lines: [
-      `Between: ${COMPANY} ("Buyer") and ${SUPPLIER} ("Supplier").`,
-      `Effective date: ${CONTRACT.effectiveDate}.`,
-      '',
-      'Section 1. Covered Component.',
-      `  Covered OEM part: ${CONTRACT.coveredOemPart}.`,
-      `  Covered supplier part: ${CONTRACT.coveredSupplierPart}.`,
-      '',
-      'Section 2. Warranty.',
-      `  Warranty period: ${CONTRACT.warrantyMonths} months from documented delivery.`,
-      '',
-      'Section 3. Recoverable Cost.',
-      `  Recoverable cost: ${CONTRACT.recoverableCost}.`,
-      `  Per-unit cap: $${CONTRACT.perUnitCap}.`,
-      '  Labor: excluded. Shipping: excluded.',
-      '',
-      'Section 4. Required Evidence.',
-      '  Completed warranty record, exact component and supplier traceability,',
-      '  and confirmed supplier-attributable failure.',
-      '',
-      'Section 5. Filing Window.',
-      `  ${CONTRACT.filingWindowDays} days after completed repair.`,
-      '',
-      'Section 6. Population-Level Causation.',
-      '  An approved population-level field-failure report may establish causation',
-      '  for claims matching its frozen component, supplier-lot, date, and failure-code',
-      '  criteria. This is a demonstration term, not a universal recovery rule.',
-      '',
-      FOOTER,
-    ],
-  },
-]);
-writeFileSync(join(OUT, `Atlas_PSU_Supply_Agreement_${CONTRACT_ID}.pdf`), agreement);
+// 1. Supply Agreement (detailed, multi-page)
+writeFileSync(join(OUT, `Atlas_PSU_Supply_Agreement_${CONTRACT_ID}.pdf`), buildPdf(agreementPages()));
 
-// 2. Amendment
-const amendment = buildPdf([
-  {
-    title: `Amendment 01 to ${CONTRACT_ID}`,
-    lines: [
-      `This Amendment 01 modifies Supply Agreement ${CONTRACT_ID} between ${COMPANY}`,
-      `and ${SUPPLIER}.`,
-      '',
-      'Amendment: The covered supplier part mapping for OEM part PSU-750 is',
-      `  updated to include supplier part ${CONTRACT.coveredSupplierPart}.`,
-      '',
-      'All other terms of the Agreement remain unchanged.',
-      '',
-      FOOTER,
-    ],
-  },
-]);
-writeFileSync(join(OUT, `Atlas_PSU_Amendment_01_${CONTRACT_ID}.pdf`), amendment);
+// 2. Amendment No. 1 (adds AP-750R2)
+writeFileSync(join(OUT, `Atlas_PSU_Amendment_01_${CONTRACT_ID}.pdf`), buildPdf(amendmentPages()));
 
 // 3. Warranty Trend Report
 const trend = buildPdf([
