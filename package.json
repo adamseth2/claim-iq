@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "box:verify": "node --env-file=.env server/box-verify.mjs",
     "box:seed": "node --env-file=.env server/box-seed.mjs",
-    "seed:docs": "node server/seed/generate.mjs"
+    "seed:docs": "node server/seed/generate.mjs",
+    "box:assets": "node server/box-assets-gen.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

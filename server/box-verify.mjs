@@ -4,7 +4,7 @@
 // output folder, and whether Box AI Structured Extract is entitled.
 //
 // Run: npm run box:verify   (requires a completed OAuth login so tokens exist)
-import { boxApi, loadTokens } from './box-client.mjs';
+import { boxApi, loadTokens, enterpriseScope } from './box-client.mjs';
 
 const TEMPLATE_KEY = 'claimiqRecovery';
 const SCOPE = 'enterprise';
@@ -17,7 +17,7 @@ function record(name, ok, detail) {
 }
 
 async function main() {
-  if (!loadTokens()?.access_token) {
+  if (!process.env.BOX_DEV_TOKEN && !loadTokens()?.access_token) {
     console.error(
       'No Box tokens found. Start the app (npm run dev), complete the Box OAuth login at ' +
         'http://localhost:3000, then re-run npm run box:verify.',
@@ -85,11 +85,12 @@ async function main() {
 
   // 4. Metadata query (requires at least the template to exist)
   try {
+    const scope = await enterpriseScope();
     await boxApi('/metadata_queries/execute_read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: `${SCOPE}.${TEMPLATE_KEY}`,
+        from: `${scope}.${TEMPLATE_KEY}`,
         ancestor_folder_id: '0',
         query: 'signalId = :sig',
         query_params: { sig: 'SIG-2026-009' },
@@ -143,8 +144,8 @@ async function main() {
 
   // 7. Structured Extract entitlement (Box AI)
   if (fileId) {
-    try {
-      await boxApi('/ai/extract_structured', {
+    const extract = () =>
+      boxApi('/ai/extract_structured', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -152,14 +153,36 @@ async function main() {
           fields: [{ key: 'documentType', type: 'string', displayName: 'Document Type' }],
         }),
       });
+    try {
+      await extract();
       record('structured extract', true, 'entitled');
     } catch (e) {
-      const entitled = !(e.status === 403 || e.status === 401);
-      record(
-        'structured extract',
-        false,
-        entitled ? String(e.message ?? e) : 'NOT ENTITLED — fixture fallback will be used (PRD 10)',
-      );
+      if (e.status === 412) {
+        // File not yet processed by Box AI; wait and retry once.
+        await new Promise((r) => setTimeout(r, 4000));
+        try {
+          await extract();
+          record('structured extract', true, 'entitled (after retry)');
+        } catch (e2) {
+          const entitled2 = !(e2.status === 403 || e2.status === 401);
+          record(
+            'structured extract',
+            entitled2 && e2.status === 412,
+            e2.status === 412
+              ? 'entitled; file still processing (transient) — ok'
+              : entitled2
+                ? String(e2.message ?? e2)
+                : 'NOT ENTITLED — fixture fallback will be used (PRD 10)',
+          );
+        }
+      } else {
+        const entitled = !(e.status === 403 || e.status === 401);
+        record(
+          'structured extract',
+          false,
+          entitled ? String(e.message ?? e) : 'NOT ENTITLED — fixture fallback will be used (PRD 10)',
+        );
+      }
     }
   }
 

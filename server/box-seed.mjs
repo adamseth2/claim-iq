@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { boxApi, loadTokens } from './box-client.mjs';
+import { boxApi, loadTokens, enterpriseScope } from './box-client.mjs';
 import {
   SIGNAL_ID,
   CONTRACT_ID,
@@ -138,7 +138,25 @@ async function ensurePath(segments) {
 async function ensureTemplate() {
   try {
     const t = await boxApi(`/metadata_templates/${SCOPE}/${TEMPLATE_KEY}/schema`);
-    console.log('metadata template exists:', t.templateKey);
+    // Reconcile: add any of the 14 fields that are missing (e.g. if the
+    // verify step created a minimal 2-field template earlier).
+    const existingKeys = new Set((t.fields || []).map((f) => f.key));
+    const missing = TEMPLATE_FIELDS.filter((f) => !existingKeys.has(f.key));
+    if (missing.length) {
+      const ops = missing.map((f) => ({
+        op: 'addField',
+        fieldKey: f.key,
+        data: { type: f.type, key: f.key, displayName: f.displayName },
+      }));
+      const updated = await boxApi(`/metadata_templates/${SCOPE}/${TEMPLATE_KEY}/schema`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ops),
+      });
+      console.log(`metadata template updated: added ${missing.length} field(s)`);
+      return updated;
+    }
+    console.log('metadata template exists with all fields:', t.templateKey);
     return t;
   } catch (e) {
     if (e.status !== 404) throw e;
@@ -160,6 +178,12 @@ async function ensureTemplate() {
 async function uploadFile(fileName, folderId) {
   const filePath = join(OUT, fileName);
   const data = readFileSync(filePath);
+
+  // Idempotent: if a file with this name already exists in the folder, upload
+  // a new version to that file id rather than creating a duplicate.
+  const items = await boxApi(`/folders/${folderId}/items?limit=1000&fields=id,name,type`);
+  const existing = (items.entries || []).find((e) => e.type === 'file' && e.name === fileName);
+
   const boundary = '----claimiqseed' + Date.now();
   const pre =
     `--${boundary}\r\n` +
@@ -171,7 +195,11 @@ async function uploadFile(fileName, folderId) {
   const post = `\r\n--${boundary}--\r\n`;
   const body = Buffer.concat([Buffer.from(pre, 'utf8'), data, Buffer.from(post, 'utf8')]);
 
-  const res = await boxApi('https://upload.box.com/api/2.0/files/content', {
+  const url = existing
+    ? `https://upload.box.com/api/2.0/files/${existing.id}/content`
+    : 'https://upload.box.com/api/2.0/files/content';
+
+  const res = await boxApi(url, {
     method: 'POST',
     headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
     body,
@@ -197,12 +225,13 @@ async function applyMetadata(fileId, meta) {
 
 async function verifyQueries(rootId) {
   const out = {};
+  const scope = await enterpriseScope();
   // Q1: all docs for SIG-2026-009
   out.q1_signalDocs = await boxApi('/metadata_queries/execute_read', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `${SCOPE}.${TEMPLATE_KEY}`,
+      from: `${scope}.${TEMPLATE_KEY}`,
       ancestor_folder_id: rootId,
       query: 'signalId = :sig',
       query_params: { sig: SIGNAL_ID },
@@ -215,7 +244,7 @@ async function verifyQueries(rootId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `${SCOPE}.${TEMPLATE_KEY}`,
+      from: `${scope}.${TEMPLATE_KEY}`,
       ancestor_folder_id: rootId,
       query: 'documentType = :dt AND oemPartNumber = :part',
       query_params: { dt: 'SupplyAgreement', part: OEM_PART },
@@ -228,7 +257,7 @@ async function verifyQueries(rootId) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `${SCOPE}.${TEMPLATE_KEY}`,
+      from: `${scope}.${TEMPLATE_KEY}`,
       ancestor_folder_id: rootId,
       query: 'documentType = :dt',
       query_params: { dt: 'DraftRecoveryClaim' },
@@ -240,7 +269,7 @@ async function verifyQueries(rootId) {
 }
 
 async function main() {
-  if (!loadTokens()?.access_token) {
+  if (!process.env.BOX_DEV_TOKEN && !loadTokens()?.access_token) {
     console.error('No Box tokens. Complete OAuth login first, then run npm run box:seed.');
     process.exit(2);
   }

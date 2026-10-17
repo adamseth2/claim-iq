@@ -97,8 +97,13 @@ export async function refresh() {
 }
 
 async function accessToken() {
+  // A short-lived Developer Token (from the Box console) bypasses the OAuth
+  // flow entirely. Useful for a single demo/seed session (~60 min lifetime).
+  if (process.env.BOX_DEV_TOKEN) {
+    return process.env.BOX_DEV_TOKEN;
+  }
   let tok = loadTokens();
-  if (!tok) throw new Error('Not authenticated. Run the OAuth flow first.');
+  if (!tok) throw new Error('Not authenticated. Run the OAuth flow first, or set BOX_DEV_TOKEN.');
   // refresh if within 60s of expiry
   if (!tok.expires_at || Date.now() > tok.expires_at - 60000) {
     tok = await refresh();
@@ -130,3 +135,14 @@ export async function boxApi(path, { method = 'GET', body, headers = {}, raw = f
 }
 
 export { API, TOKEN_FILE };
+
+// Resolve the enterprise-scoped metadata identifier (enterprise_<id>) used by
+// metadata_queries execute_read `from` fields and metadata.<scope>.<key> refs.
+let _enterpriseScope = null;
+export async function enterpriseScope() {
+  if (_enterpriseScope) return _enterpriseScope;
+  const me = await boxApi('/users/me?fields=id,enterprise');
+  const entId = me.enterprise?.id;
+  _enterpriseScope = entId ? `enterprise_${entId}` : 'enterprise';
+  return _enterpriseScope;
+}
