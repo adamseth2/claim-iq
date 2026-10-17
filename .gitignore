@@ -1,0 +1,29 @@
+# deps
+node_modules/
+
+# build
+dist/
+*.tsbuildinfo
+
+# env & secrets  (NEVER commit Box client secret / tokens)
+.env
+.env.*
+!.env.example
+box_config.json
+*.secret
+
+# box runtime artifacts
+server/.box-tokens.json
+server/box-assets.json
+
+# generated seed documents (regenerate via npm run seed:docs)
+server/seed/out/
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# logs
+*.log
