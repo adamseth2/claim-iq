@@ -6,7 +6,7 @@
 // (the `dev:proxy` npm script does not auto-load .env; use `box` scripts or
 //  run with --env-file yourself. The dev script runs both app + proxy.)
 import express from 'express';
-import { authorizeUrl, exchangeCode, loadTokens } from './box-client.mjs';
+import { authorizeUrl, exchangeCode, loadTokens, boxApi } from './box-client.mjs';
 import { generateAndWriteDraft } from './box-draft.mjs';
 
 const app = express();
@@ -14,13 +14,26 @@ app.use(express.json());
 
 const PORT = process.env.PROXY_PORT || 4000;
 
-// Health / auth status
-app.get('/box-proxy/status', (_req, res) => {
+// Health / auth status. Reports real connectivity: a dev token or a stored
+// OAuth session both count. Does a lightweight whoami to confirm reachability.
+app.get('/box-proxy/status', async (_req, res) => {
+  const hasDevToken = Boolean(process.env.BOX_DEV_TOKEN);
   const tok = loadTokens();
-  res.json({
-    authenticated: Boolean(tok?.access_token),
-    expiresAt: tok?.expires_at ?? null,
-  });
+  const hasOAuth = Boolean(tok?.access_token);
+  if (!hasDevToken && !hasOAuth) {
+    return res.json({ authenticated: false, via: null, expiresAt: null });
+  }
+  try {
+    const me = await boxApi('/users/me?fields=login');
+    res.json({
+      authenticated: true,
+      via: hasDevToken ? 'devToken' : 'oauth',
+      login: me.login,
+      expiresAt: tok?.expires_at ?? null,
+    });
+  } catch (e) {
+    res.json({ authenticated: false, via: null, error: String(e.message ?? e) });
+  }
 });
 
 // Returns the Box authorize URL for the browser to redirect to.
