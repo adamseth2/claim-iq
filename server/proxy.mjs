@@ -7,6 +7,7 @@
 //  run with --env-file yourself. The dev script runs both app + proxy.)
 import express from 'express';
 import { authorizeUrl, exchangeCode, loadTokens } from './box-client.mjs';
+import { generateAndWriteDraft } from './box-draft.mjs';
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,16 @@ app.post('/box-proxy/oauth/token', async (req, res) => {
   try {
     const tok = await exchangeCode(code);
     res.json({ ok: true, expiresAt: tok.expires_at });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e.message ?? e) });
+  }
+});
+
+// Generates the draft supplier recovery claim and writes it to Box.
+app.post('/box-proxy/draft', async (_req, res) => {
+  try {
+    const result = await generateAndWriteDraft();
+    res.json({ ok: true, ...result });
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e.message ?? e) });
   }
