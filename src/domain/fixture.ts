@@ -48,18 +48,38 @@ function isoDate(rnd: () => number, fromY = 2025, fromM = 9, fromD = 18): string
   return new Date(start + offset * day).toISOString().slice(0, 10);
 }
 
+const DAY = 86400000;
+const isoFrom = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
 // Deterministic date in the CURRENT 30-day signal window (2026-09-18..2026-10-17).
 function currentWindowDate(k: number): string {
-  const start = Date.UTC(2026, 8, 18); // 2026-09-18
-  const day = 86400000;
-  return new Date(start + (k % 30) * day).toISOString().slice(0, 10);
+  return isoFrom(Date.UTC(2026, 8, 18) + ((k * 7) % 30) * DAY);
 }
 
-// Deterministic date in the EARLIER part of the 90-day scope (2026-07-20..2026-09-17).
-function earlierScopeDate(k: number): string {
-  const start = Date.UTC(2026, 6, 20); // 2026-07-20
-  const day = 86400000;
-  return new Date(start + (k % 59) * day).toISOString().slice(0, 10);
+// Deterministic date in the two 30-day periods before the signal window.
+// j in 0..28: 14 claims in 2026-07-20..2026-08-18, 15 in 2026-08-19..2026-09-17,
+// giving an escalating 14 -> 15 -> 19 ramp across the 90-day scope.
+function earlierScopeDate(j: number): string {
+  if (j < 14) return isoFrom(Date.UTC(2026, 6, 20) + j * 2 * DAY);
+  return isoFrom(Date.UTC(2026, 7, 19) + (j - 14) * 2 * DAY);
+}
+
+// Interleaved, deterministic classification order so claim IDs and dates are
+// not grouped by outcome. Index 0 is supported (pinned to WR-10482).
+function classificationOrder(): Classification[] {
+  const pool: Classification[] = [
+    ...Array<Classification>(24).fill('supported'),
+    ...Array<Classification>(15).fill('missing'),
+    ...Array<Classification>(6).fill('engineering'),
+    ...Array<Classification>(3).fill('excluded'),
+  ];
+  const rnd = mulberry32(4820);
+  const rest = pool.slice(1);
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [pool[0], ...rest];
 }
 
 /**
@@ -105,7 +125,7 @@ export function buildInvestigationPopulation(): Claim[] {
       cost = [480, 760, 620][i % 3];
     }
 
-    const repairDate = g < IN_WINDOW ? currentWindowDate(g) : earlierScopeDate(g);
+    const repairDate = g < IN_WINDOW ? currentWindowDate(g) : earlierScopeDate(g - IN_WINDOW);
     g += 1;
 
     rows.push({
@@ -127,10 +147,13 @@ export function buildInvestigationPopulation(): Claim[] {
     });
   };
 
-  for (let i = 0; i < 24; i++) push('supported', i);
-  for (let i = 0; i < 15; i++) push('missing', i);
-  for (let i = 0; i < 6; i++) push('engineering', i);
-  for (let i = 0; i < 3; i++) push('excluded', i);
+  const perClass: Record<Classification, number> = {
+    supported: 0,
+    missing: 0,
+    engineering: 0,
+    excluded: 0,
+  };
+  for (const c of classificationOrder()) push(c, perClass[c]++);
 
   // Pin the representative claim as the first supported row.
   rows[0] = {
