@@ -17,5 +17,5 @@ Read `README.md`, `PRD.md`, and `BRIEF.md` before making changes.
 - Do not initialize Git without Adam's permission.
 - Do not provision services, spend money, upload Box assets, or install dependencies before Adam approves implementation.
 - Verify each completed build step using the checks defined in `PRD.md`.
-- Preserve exact expected totals: `12,480`, `19`, `6`, `3.17x`, `48`, `24`, `15`, `6`, `3`, and `$4,320`.
+- Preserve exact expected totals: `12,480`, `19`, `6`, `3.17x`, `48`, `24`, `15`, `6`, `3`, and `$14,880`.
 - Keep Box integration as the first implementation milestone.

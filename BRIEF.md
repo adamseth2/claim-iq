@@ -7,7 +7,7 @@ Status: Draft PRD only; implementation not started
 
 ClaimIQ Recovery is a Box-first supplier recovery audit prototype for one fictional scenario.
 
-A technical specialist reviews `12,480` synthetic warranty claims, investigates one elevated R500 PSU-750 signal, verifies technical and contractual evidence in Box, and prepares an unsubmitted supplier recovery claim draft for `24` supported claims totaling `$4,320 potential recovery pending human validation`.
+A technical specialist reviews `12,480` synthetic warranty claims, investigates one elevated R500 PSU-750 signal, verifies technical and contractual evidence in Box, and prepares an unsubmitted supplier recovery claim draft for `24` supported claims totaling `$14,880 potential recovery pending human validation`.
 
 ## Scope Decisions
 

@@ -34,7 +34,7 @@ The technical specialist opens the Warranty Recovery Audit dashboard and sees:
 3. `19` qualifying repairs in the latest 30-day period versus a historical average of `6` per 30 days.
 4. A `3.17x` increase above baseline.
 5. `48` claims in the 90-day investigation population involving PSU-750 replacements supplied by Atlas Power Components.
-6. `24` claims with sufficient reviewed evidence for `$4,320 potential recovery pending human validation`.
+6. `24` claims with sufficient reviewed evidence for `$14,880 potential recovery pending human validation`.
 7. `15` claims missing supplier-lot traceability.
 8. `6` claims requiring engineering review.
 9. `3` claims excluded for documented non-supplier causes.
@@ -43,7 +43,7 @@ The specialist opens the signal, reviews the claim population, opens the enginee
 
 ClaimIQ displays:
 
-> Recommended next step: Prepare a supplier recovery claim for 24 evidence-supported claims totaling $4,320 potential recovery pending human validation.
+> Recommended next step: Prepare a supplier recovery claim for 24 evidence-supported claims totaling $14,880 potential recovery pending human validation.
 
 The specialist selects:
 
@@ -84,7 +84,7 @@ The product opportunity is a current-situation dashboard and investigation layer
 4. Never present the signal as proof of supplier responsibility.
 5. Connect the signal to one `48`-claim investigation population.
 6. Classify the population into supported, missing-evidence, engineering-review, and excluded groups.
-7. Quantify only the `24` evidence-supported claims at `$180` each, totaling `$4,320`.
+7. Quantify only the `24` evidence-supported claims at `$620` each, totaling `$14,880`.
 8. Make Box the authoritative repository for the agreement, amendment, engineering evidence, returned-part analysis, photographs, and traceability documents.
 9. Let the technical specialist open every material document-derived finding in its original Box source.
 10. Use Box metadata to find exact investigation documents.
@@ -226,7 +226,7 @@ Use Box AI Structured Extract when available to obtain:
 
 Request source references and confidence information where supported. Store those values in ClaimIQ's local audit state.
 
-An extracted value begins as `Candidate`. The synthetic initial scenario includes a visible `Reviewer confirmed` state before that value can support the `$4,320` total.
+An extracted value begins as `Candidate`. The synthetic initial scenario includes a visible `Reviewer confirmed` state before that value can support the `$14,880` total.
 
 If Structured Extract is not enabled in the supplied Box account, the prototype may use a clearly labeled pre-seeded extraction fixture while still using live Box files, metadata, versions, previews, and output writes. This limitation must be shown in the capability record.
 
@@ -270,7 +270,7 @@ Claims matching R500, PSU-750, and Atlas supplier mapping: `48`.
 
 | Classification | Claims | Monetary treatment |
 |---|---:|---|
-| Evidence-supported | 24 | 24 x $180 = $4,320 |
+| Evidence-supported | 24 | 24 x $620 = $14,880 |
 | Missing supplier-lot evidence | 15 | Not quantified |
 | Engineering review | 6 | Not quantified |
 | Excluded non-supplier cause | 3 | Excluded |
@@ -288,9 +288,9 @@ Supplier lot: `ATL-24-118`
 Delivery receipt: `RCV-250118-04`  
 Repair completed: `2026-09-20`  
 Filing due: `2026-12-19`  
-Verified replacement-part cost: `$180`  
-Contract cap: `$200`  
-Proposed amount: `min($180, $200) = $180`
+Verified replacement-part cost: `$620`  
+Contract cap: `$650`  
+Proposed amount: `min($620, $650) = $620`
 
 The claim is evidence-supported because component traceability, in-period delivery, approved engineering causation, covered cost, open filing period, and no previous recovery are all present.
 
@@ -302,7 +302,7 @@ Covered OEM part: `PSU-750`
 Covered supplier part: `AP-750R2`  
 Warranty period: 24 months from documented delivery  
 Recoverable cost: verified replacement-part cost  
-Per-unit cap: `$200`  
+Per-unit cap: `$650`  
 Labor: excluded  
 Shipping: excluded  
 Required evidence: completed warranty record, exact traceability, and confirmed supplier-attributable failure  
@@ -346,7 +346,7 @@ Northstar ClaimIQ/
 Generated during the demo, not seeded:
 
 7. `SI-2026-014_Supplier_Recovery_Claim_DRAFT.pdf`
-   Generated claim package containing the issue summary, 24-claim schedule, `$4,320` proposed amount, agreement basis, evidence references, exclusions, and unresolved populations.
+   Generated claim package containing the issue summary, 24-claim schedule, `$14,880` proposed amount, agreement basis, evidence references, exclusions, and unresolved populations.
 
 ## 13. Box Metadata
 
@@ -406,7 +406,7 @@ Summary strip:
 
 1. `12,480` - `Completed claims audited`.
 2. `1` - `Active recovery signal`.
-3. `$4,320` - `Potential recovery pending human validation`.
+3. `$14,880` - `Potential recovery pending human validation`.
 4. `21` - `Claims requiring evidence or engineering review`.
 
 Primary signal panel:
@@ -454,7 +454,7 @@ Header:
 2. Title: `Elevated R500 no-power repairs`.
 3. State: `Technical review recommended` before action and `Investigation opened` after action.
 4. Population: `48 claims`.
-5. Supported potential: `$4,320 pending human validation`.
+5. Supported potential: `$14,880 pending human validation`.
 6. Initial action: `Open supplier recovery investigation`.
 7. After the investigation opens: `Prepare draft supplier recovery claim`.
 
@@ -468,8 +468,8 @@ Recovery recommendation:
 
 1. Recommendation: `Prepare supplier recovery claim`.
 2. Supported population: `24 claims`.
-3. Proposed amount: `$4,320 potential recovery pending human validation`.
-4. Agreement basis: covered PSU-750/AP-750R2, 24-month term, verified part cost, `$200` cap, and required evidence.
+3. Proposed amount: `$14,880 potential recovery pending human validation`.
+4. Agreement basis: covered PSU-750/AP-750R2, 24-month term, verified part cost, `$650` cap, and required evidence.
 5. Excluded from the draft: 15 missing-traceability claims, 6 engineering-review claims, and 3 non-supplier-cause claims.
 6. Warning: `Recommendation requires human approval and is not a submitted claim`.
 
@@ -498,7 +498,7 @@ Representative claim detail for `WR-10482`:
 
 1. Exact component and supplier identifiers.
 2. Requirement checklist.
-3. `$180` calculation.
+3. `$620` calculation.
 4. Engineering conclusion.
 5. Contract term.
 6. Traceability chain.
@@ -525,7 +525,7 @@ Selecting `Open supplier recovery investigation` requires confirmation and then:
 Selecting `Prepare draft supplier recovery claim` requires a second confirmation and then:
 
 1. Freezes the 24-claim supported population snapshot.
-2. Records the `$4,320` proposed amount and applied agreement terms.
+2. Records the `$14,880` proposed amount and applied agreement terms.
 3. Generates `SI-2026-014_Supplier_Recovery_Claim_DRAFT.pdf`.
 4. Writes the draft to `04 Draft Supplier Recovery Claims/` in Box.
 5. Labels the output `Draft - not submitted`.
@@ -578,9 +578,9 @@ A claim is supported only when all are true:
 8. No previous recovery or credit exists.
 9. Required evidence is accessible.
 
-Potential amount is `min(verified part cost, $200 cap)`.
+Potential amount is `min(verified part cost, $650 cap)`.
 
-Expected result: 24 supported claims x `$180` = `$4,320`.
+Expected result: 24 supported claims x `$620` = `$14,880`.
 
 ## 16. User Stories
 
@@ -593,7 +593,7 @@ Acceptance criteria:
 1. Dashboard shows 12,480 audited claims and one active signal.
 2. Signal shows 19 recent claims, baseline 6, and 3.17x ratio.
 3. Dashboard labels the signal as unconfirmed.
-4. Dashboard shows `$4,320 potential recovery pending human validation`.
+4. Dashboard shows `$14,880 potential recovery pending human validation`.
 
 ### US-02: Understand the Signal
 
@@ -623,7 +623,7 @@ As a technical specialist, I want one representative claim drill-down so that I 
 Acceptance criteria:
 
 1. `WR-10482` displays exact traceability and reviewed engineering evidence.
-2. Cost calculation is `min($180, $200) = $180`.
+2. Cost calculation is `min($620, $650) = $620`.
 3. Each requirement identifies its source.
 
 ### US-05: Open the Investigation and Prepare the Draft Claim
@@ -634,7 +634,7 @@ Acceptance criteria:
 
 1. Action requires confirmation.
 2. Investigation records the signal and 48-claim population snapshot.
-3. Recommendation includes only the 24 supported claims and `$4,320`.
+3. Recommendation includes only the 24 supported claims and `$14,880`.
 4. Draft claim package is written to Box.
 5. Package is labeled `Draft - not submitted`.
 6. No external communication occurs.
@@ -645,13 +645,13 @@ Acceptance criteria:
 2. The deterministic rule produces exactly one signal with 19 recent claims and 3.17x baseline.
 3. The 90-day investigation population contains exactly 48 claims.
 4. Classification totals exactly 24 supported, 15 missing traceability, 6 engineering review, and 3 excluded.
-5. Only the 24 supported claims enter the `$4,320` total.
+5. Only the 24 supported claims enter the `$14,880` total.
 6. The UI never describes the signal as proof of supplier fault.
 7. `WR-10482` can be traced from claim data to engineering and contract evidence.
 8. At least one agreement source and one engineering source open from ClaimIQ in Box.
 9. Box metadata queries return the expected files.
 10. Material extracted facts show source and review state.
-11. The specialist can open `SI-2026-014` and create the 24-claim, `$4,320` draft recovery claim package in Box.
+11. The specialist can open `SI-2026-014` and create the 24-claim, `$14,880` draft recovery claim package in Box.
 12. Refreshing the browser preserves the local investigation state.
 13. The complete scenario runs in four minutes or less in two consecutive rehearsals.
 14. Type checks, tests, production build, and P0 browser workflows pass.
@@ -692,12 +692,12 @@ Each approved step must be functionally verified and committed locally as one fo
 4. Verify Structured Extract on one document, or record the entitlement limitation and approved extraction fixture.
 5. Scaffold the React and TypeScript application with typecheck, test, build, and browser-test commands.
 6. Define typed models and generate the deterministic 12,480-claim fixture.
-7. Implement the 19-claim signal rule, 48-claim population, four classifications, and exact `$4,320` total with tests.
+7. Implement the 19-claim signal rule, 48-claim population, four classifications, and exact `$14,880` total with tests.
 8. Build the Warranty Recovery Audit dashboard with summary strip, one signal, simple trend, funnel, and attention counts.
 9. Build the Signal Investigation with four decision lanes and the paginated 48-claim table.
 10. Build the `WR-10482` representative detail and agreement-backed requirement checklist.
 11. Implement Box metadata discovery, source inspection, `Open in Box`, and file-version provenance.
-12. Build the recommendation panel showing 24 supported claims, `$4,320`, agreement basis, and excluded populations.
+12. Build the recommendation panel showing 24 supported claims, `$14,880`, agreement basis, and excluded populations.
 13. Implement `Open supplier recovery investigation` with confirmation and schema-versioned local persistence.
 14. Generate the draft supplier recovery claim package and write it to Box after a second confirmation.
 15. Add the essential loading, Box-unavailable, and extraction-unavailable states.
@@ -715,7 +715,7 @@ Each approved step must be functionally verified and committed locally as one fo
 4. Ratio rounds and displays as 3.17x.
 5. Investigation population is 48.
 6. Classification totals reconcile to 48.
-7. Supported total is exactly `$4,320`.
+7. Supported total is exactly `$14,880`.
 8. Unsupported, unresolved, or excluded claims do not enter the amount.
 
 ### Box Tests
@@ -725,7 +725,7 @@ Each approved step must be functionally verified and committed locally as one fo
 3. Current file IDs and versions are captured.
 4. Original files open from ClaimIQ.
 5. Structured extraction or the disclosed extraction fixture returns expected fields and references.
-6. Draft supplier recovery claim package is written to the correct Box folder with 24 supported claims, `$4,320`, and `Draft - not submitted` labeling.
+6. Draft supplier recovery claim package is written to the correct Box folder with 24 supported claims, `$14,880`, and `Draft - not submitted` labeling.
 7. Unauthorized folders are not exposed.
 
 ### UI Tests

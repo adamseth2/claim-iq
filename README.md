@@ -16,7 +16,7 @@ Build one Box-first working prototype for one fictional scenario:
 2. Surface one R500 PSU-750 signal: `19` recent claims versus a baseline of `6`.
 3. Investigate a `48`-claim population.
 4. Classify `24` claims as evidence-supported, `15` as missing traceability, `6` as engineering review, and `3` as excluded.
-5. Show `$4,320 potential recovery pending human validation`.
+5. Show `$14,880 potential recovery pending human validation`.
 6. Verify engineering and agreement evidence in Box.
 7. Recommend preparing a supplier recovery claim.
 8. Create an unsubmitted 24-claim draft recovery package in Box.

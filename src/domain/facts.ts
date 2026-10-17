@@ -12,10 +12,10 @@ export const PRODUCT_MODEL = 'R500';
 export const OEM_PART = 'PSU-750';
 export const SUPPLIER_PART = 'AP-750R2';
 
-export const PER_UNIT_CAP = 200;
-export const VERIFIED_PART_COST = 180;
+export const PER_UNIT_CAP = 650;
+export const VERIFIED_PART_COST = 620;
 export const SUPPORTED_CLAIMS = 24;
-export const SUPPORTED_TOTAL = SUPPORTED_CLAIMS * VERIFIED_PART_COST; // 4320
+export const SUPPORTED_TOTAL = SUPPORTED_CLAIMS * VERIFIED_PART_COST; // 14880
 
 export const DATASET_PERIOD = { from: '2025-10-18', to: '2026-10-17' };
 export const AS_OF = '2026-10-17 12:00 PM America/Los_Angeles';

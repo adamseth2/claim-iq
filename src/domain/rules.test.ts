@@ -54,15 +54,15 @@ describe('classification', () => {
 });
 
 describe('recovery total', () => {
-  it('is exactly $4,320 from 24 supported claims', () => {
+  it('is exactly $14,880 from 24 supported claims', () => {
     const r = computeRecoveryTotal();
     expect(r.supportedCount).toBe(24);
-    expect(r.total).toBe(4320);
+    expect(r.total).toBe(14880);
     expect(r.total).toBe(SUPPORTED_TOTAL);
   });
-  it('each supported claim contributes min(cost, $200) = $180', () => {
+  it('each supported claim contributes min(cost, $650) = $620', () => {
     const r = computeRecoveryTotal();
-    expect(r.perClaim.every((v) => v === 180)).toBe(true);
+    expect(r.perClaim.every((v) => v === 620)).toBe(true);
   });
 });
 

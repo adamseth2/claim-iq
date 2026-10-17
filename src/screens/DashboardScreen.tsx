@@ -26,7 +26,9 @@ export function DashboardScreen() {
   const recovery = useMemo(() => computeRecoveryTotal(), []);
   const trend = useMemo(() => computeTrend(), []);
 
-  const attention = cls.counts.missing + cls.counts.engineering + cls.counts.excluded;
+  // PRD 14.2: "claims requiring evidence or engineering review" = missing + engineering (21).
+  // Excluded (3) is reported separately in the Human attention panel.
+  const attention = cls.counts.missing + cls.counts.engineering;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
