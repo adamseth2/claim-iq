@@ -1,9 +1,12 @@
 // Generates the six synthetic seed documents for the ClaimIQ demo.
 // Output: server/seed/out/*.pdf and *.xlsx
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { buildPdf } from './pdf.mjs';
+import { dirname, join, resolve, basename } from 'node:path';
+import { buildPdf as buildNativePdf } from './pdf.mjs';
 import { buildXlsx } from './xlsx.mjs';
 import { buildPopulation } from './population.mjs';
 import { agreementPages, amendmentPages } from './contracts.mjs';
@@ -21,16 +24,46 @@ import {
 } from './facts.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUT = join(__dirname, 'out');
+const { values } = parseArgs({ options: {
+  renderer: { type: 'string', default: 'native' },
+  output: { type: 'string', default: join(__dirname, 'out') },
+  python: { type: 'string', default: process.env.CLAIMIQ_PYTHON || (process.platform === 'win32' ? 'python' : 'python3') },
+} });
+if (!['native', 'reportlab'].includes(values.renderer)) {
+  throw new Error('Renderer must be native or reportlab.');
+}
+if (values.renderer === 'reportlab') {
+  const check = spawnSync(values.python, ['-c', 'import reportlab'], { encoding: 'utf8' });
+  if (check.error || check.status !== 0) {
+    throw new Error('ReportLab is unavailable. Install server/seed/requirements.txt and set CLAIMIQ_PYTHON or --python. No fallback renderer was selected.');
+  }
+}
+const OUT = resolve(values.output);
 mkdirSync(OUT, { recursive: true });
+const artifacts = [];
+function buildPdf(pages) {
+  if (values.renderer === 'native') return buildNativePdf(pages);
+  const result = spawnSync(values.python, [join(__dirname, 'render_documents.py')], {
+    input: JSON.stringify({ pages }), maxBuffer: 10 * 1024 * 1024,
+  });
+  if (result.error || result.status !== 0) {
+    throw new Error(`ReportLab rendering failed: ${result.error?.message || result.stderr.toString().trim()}`);
+  }
+  return result.stdout;
+}
+function writeArtifact(path, content) {
+  writeFileSync(path, content);
+  artifacts.push({ name: basename(path), bytes: content.length,
+    sha256: createHash('sha256').update(content).digest('hex') });
+}
 
-const FOOTER = 'SYNTHETIC DEMONSTRATION DOCUMENT — fictional. Not a real agreement or legal instrument.';
+const FOOTER = 'SYNTHETIC DEMONSTRATION DOCUMENT - fictional. Not a real agreement or legal instrument.';
 
-// 1. Supply Agreement (detailed, multi-page)
-writeFileSync(join(OUT, `Atlas_PSU_Supply_Agreement_${CONTRACT_ID}.pdf`), buildPdf(agreementPages()));
+// 1. Supply Agreement (current detailed multi-page contract)
+writeArtifact(join(OUT, `Atlas_PSU_Supply_Agreement_${CONTRACT_ID}.pdf`), buildPdf(agreementPages()));
 
-// 2. Amendment No. 1 (adds AP-750R2)
-writeFileSync(join(OUT, `Atlas_PSU_Amendment_01_${CONTRACT_ID}.pdf`), buildPdf(amendmentPages()));
+// 2. Amendment No. 1 (current AP-750R2 coverage terms)
+writeArtifact(join(OUT, `Atlas_PSU_Amendment_01_${CONTRACT_ID}.pdf`), buildPdf(amendmentPages()));
 
 // 3. Warranty Trend Report
 const trend = buildPdf([
@@ -62,7 +95,7 @@ const trend = buildPdf([
     ],
   },
 ]);
-writeFileSync(join(OUT, `${SIGNAL.id}_Warranty_Trend_Report.pdf`), trend);
+writeArtifact(join(OUT, `${SIGNAL.id}_Warranty_Trend_Report.pdf`), trend);
 
 // 4. Engineering Report
 const engineering = buildPdf([
@@ -85,7 +118,7 @@ const engineering = buildPdf([
     ],
   },
 ]);
-writeFileSync(join(OUT, `${SIGNAL.id}_R500_PSU_Engineering_Report.pdf`), engineering);
+writeArtifact(join(OUT, `${SIGNAL.id}_R500_PSU_Engineering_Report.pdf`), engineering);
 
 // 5. Traceability Matrix (xlsx)
 const pop = buildPopulation();
@@ -122,7 +155,7 @@ const matrixRows = [
     r.classification,
   ]),
 ];
-writeFileSync(join(OUT, `${SIGNAL.id}_Traceability_Matrix.xlsx`), buildXlsx(matrixRows));
+writeArtifact(join(OUT, `${SIGNAL.id}_Traceability_Matrix.xlsx`), buildXlsx(matrixRows));
 
 // 6. Representative Claim Evidence Packet
 const packet = buildPdf([
@@ -147,7 +180,7 @@ const packet = buildPdf([
       `  Contract cap: $${REP_CLAIM.contractCap}`,
       `  Proposed amount: min($${REP_CLAIM.verifiedPartCost}, $${REP_CLAIM.contractCap}) = $${REP_CLAIM.proposedAmount}`,
       '',
-      `[Component-label image placeholder — lot ${REP_CLAIM.supplierLot}]`,
+      `[SYNTHETIC PLACEHOLDER ONLY - no photograph supplied - lot ${REP_CLAIM.supplierLot}]`,
       '',
       `Reference: approved population-level report ${ENGINEERING.reportId}`,
       `  applicable lots ${COVERED_LOTS.join(', ')}.`,
@@ -159,8 +192,15 @@ const packet = buildPdf([
     ],
   },
 ]);
-writeFileSync(join(OUT, `${REP_CLAIM.claimId}_Evidence_Packet.pdf`), packet);
+writeArtifact(join(OUT, `${REP_CLAIM.claimId}_Evidence_Packet.pdf`), packet);
 
+// A local provenance record, not Box evidence or a claim of human review.
+writeFileSync(join(OUT, 'manifest.json'), JSON.stringify({
+  schemaVersion: 1, synthetic: true, renderer: values.renderer,
+  signalId: SIGNAL.id, asOf: SIGNAL.asOf, supportedClaims: SUPPORTED_CLAIMS,
+  potentialRecovery: SUPPORTED_TOTAL, financialActionAuthorized: false,
+  documents: artifacts,
+}, null, 2) + '\n');
 console.log('Generated 6 seed documents in', OUT);
 for (const f of [
   `Atlas_PSU_Supply_Agreement_${CONTRACT_ID}.pdf`,

@@ -34,3 +34,13 @@ Before implementation, confirm:
 3. Box AI Structured Extract entitlement.
 4. Metadata-template, metadata-query, preview, and output-write permissions.
 5. Adam's explicit approval to begin.
+
+## Synthetic evidence generation
+
+`npm run seed:docs` generates the six fictional documents expected by the Box seed
+workflow, plus a local hash manifest. It uses the existing dependency-free PDF renderer.
+An optional ReportLab renderer adapts the deterministic PDF generation from Box AI Exception
+Investigator without requiring Streamlit, OpenAI credentials or the investigator app.
+
+See [the generator guide](server/seed/README.md) for setup, rendering options and tests.
+Local generation does not upload to Box or submit any recovery claim.

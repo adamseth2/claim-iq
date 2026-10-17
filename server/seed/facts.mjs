@@ -66,7 +66,7 @@ export const REP_CLAIM = {
   filingDue: '2026-12-19',
   verifiedPartCost: VERIFIED_PART_COST,
   contractCap: PER_UNIT_CAP,
-  proposedAmount: Math.min(VERIFIED_PART_COST, PER_UNIT_CAP), // 180
+  proposedAmount: Math.min(VERIFIED_PART_COST, PER_UNIT_CAP), // 620
 };
 
 // Supplier lots covered by the frozen engineering-report applicability.
